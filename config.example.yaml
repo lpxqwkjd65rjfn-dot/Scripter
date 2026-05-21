@@ -1,0 +1,89 @@
+global:
+  http_probe_path: "/probe"
+  http_probe_marker_header: "X-Probe"
+  http_probe_marker_value: "ok"
+  tcp_ports: [443, 80]
+  tcp_timeout_seconds: 6
+  http_timeout_seconds: 8
+  icmp_enabled: true
+  killswitch_consecutive_auth_errors: 3
+  state_file: "state.json"
+
+providers:
+
+  selectel:
+    enabled: false
+    min_interval_seconds: 30
+    max_ops_per_hour: 40
+    api_token: "REPLACE_WITH_SELECTEL_TOKEN"
+    project_id: "REPLACE_WITH_PROJECT_ID"
+    region: "ru-1"
+    probe_vm_id: "REPLACE_WITH_SERVER_UUID"
+    published_cidrs:
+      - "85.119.144.0/21"
+      - "188.93.16.0/20"
+
+  yandex:
+    enabled: false
+    min_interval_seconds: 30
+    max_ops_per_hour: 40
+    oauth_token: "REPLACE_WITH_YC_OAUTH_TOKEN"
+    folder_id: "REPLACE_WITH_FOLDER_ID"
+    probe_instance_id: "REPLACE_WITH_INSTANCE_ID"
+    network_interface_index: 0
+    published_cidrs:
+      - "84.201.128.0/18"
+      - "178.154.128.0/18"
+
+  vk:
+    enabled: false
+    min_interval_seconds: 30
+    max_ops_per_hour: 30
+    auth_url: "https://infra.mail.ru:35357/v3"
+    username: "REPLACE"
+    password: "REPLACE"
+    project_id: "REPLACE"
+    domain: "users"
+    region: "RegionOne"
+    probe_vm_id: "REPLACE"
+    published_cidrs:
+      - "95.163.208.0/20"
+
+  sber:
+    enabled: false
+    min_interval_seconds: 45
+    max_ops_per_hour: 20
+    ak: "REPLACE_ACCESS_KEY"
+    sk: "REPLACE_SECRET_KEY"
+    project_id: "REPLACE"
+    region: "ru-moscow-1"
+    probe_vm_id: "REPLACE"
+    published_cidrs: []
+
+  timeweb:
+    enabled: false
+    min_interval_seconds: 30
+    max_ops_per_hour: 30
+    api_token: "REPLACE_TIMEWEB_TOKEN"
+    probe_server_id: "REPLACE"
+    published_cidrs:
+      - "92.53.96.0/19"
+      - "176.57.208.0/20"
+
+  ufohosting:
+    enabled: false
+    min_interval_seconds: 60
+    max_ops_per_hour: 15
+    api_token: "REPLACE"
+    api_base: "https://my.ufohosting.ru/api/v1"
+    probe_server_id: "REPLACE"
+    published_cidrs: []
+
+  cdnvideo:
+    enabled: false
+    min_interval_seconds: 60
+    max_ops_per_hour: 15
+    api_token: "REPLACE"
+    api_base: "https://api.cdnvideo.ru"
+    probe_server_id: "REPLACE"
+    published_cidrs: []
