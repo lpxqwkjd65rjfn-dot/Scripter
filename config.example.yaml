@@ -1,20 +1,61 @@
 global:
+  # HTTP marker the probe HTTP server returns to prove identity
   http_probe_path: "/probe"
   http_probe_marker_header: "X-Probe"
   http_probe_marker_value: "ok"
+  https_probe_enabled: true
+
+  # TCP probing
   tcp_ports: [443, 80]
   tcp_timeout_seconds: 6
+  tcp_stability_attempts: 3   # repeated probes on the primary port
+  tcp_stability_required: 2   # min successes out of attempts
+
+  # HTTP probing
   http_timeout_seconds: 8
+  http_retries: 1
+
+  # ICMP
   icmp_enabled: true
+  icmp_count: 3
+
+  # Sanity guards
+  latency_max_ms: 2000
+  inter_stage_jitter_seconds: 0.3
+
+  # Account-protection: trip after N consecutive auth errors
   killswitch_consecutive_auth_errors: 3
+
+  # Provider-level circuit breaker on 429/5xx/network errors
+  circuit_failure_threshold: 5
+  circuit_reset_seconds: 1800
+
+  # Polite UA — replace contact with your real one
+  polite_user_agent: "rkn-probe/1.0 (+contact: you@example.com)"
+
   state_file: "state.json"
+
+# ---------------------------------------------------------------
+# Default per-provider safety knobs (override per provider as needed)
+#   min_interval_seconds      base spacing between API ops
+#   max_ops_per_hour          rolling hour cap
+#   max_ops_per_day           rolling day cap (NEW — primary anti-ban guard)
+#   jitter_pct                +/- jitter on min_interval (0..1)
+#   backoff_base_seconds      base for exp backoff on errors
+#   backoff_cap_seconds       cap for exp backoff
+#   post_release_cooldown_seconds  extra wait after each IP release
+#   api_retry_attempts        retries on 429/5xx/network in request()
+#   api_retry_base_seconds    backoff base for those retries
+# ---------------------------------------------------------------
 
 providers:
 
   selectel:
     enabled: false
-    min_interval_seconds: 30
-    max_ops_per_hour: 40
+    min_interval_seconds: 60
+    max_ops_per_hour: 20
+    max_ops_per_day: 100
+    post_release_cooldown_seconds: 10
     api_token: "REPLACE_WITH_SELECTEL_TOKEN"
     project_id: "REPLACE_WITH_PROJECT_ID"
     region: "ru-1"
@@ -25,8 +66,10 @@ providers:
 
   yandex:
     enabled: false
-    min_interval_seconds: 30
-    max_ops_per_hour: 40
+    min_interval_seconds: 60
+    max_ops_per_hour: 20
+    max_ops_per_day: 100
+    post_release_cooldown_seconds: 10
     oauth_token: "REPLACE_WITH_YC_OAUTH_TOKEN"
     folder_id: "REPLACE_WITH_FOLDER_ID"
     probe_instance_id: "REPLACE_WITH_INSTANCE_ID"
@@ -37,8 +80,10 @@ providers:
 
   vk:
     enabled: false
-    min_interval_seconds: 30
-    max_ops_per_hour: 30
+    min_interval_seconds: 60
+    max_ops_per_hour: 20
+    max_ops_per_day: 80
+    post_release_cooldown_seconds: 10
     auth_url: "https://infra.mail.ru:35357/v3"
     username: "REPLACE"
     password: "REPLACE"
@@ -51,8 +96,10 @@ providers:
 
   sber:
     enabled: false
-    min_interval_seconds: 45
-    max_ops_per_hour: 20
+    min_interval_seconds: 90
+    max_ops_per_hour: 15
+    max_ops_per_day: 60
+    post_release_cooldown_seconds: 15
     ak: "REPLACE_ACCESS_KEY"
     sk: "REPLACE_SECRET_KEY"
     project_id: "REPLACE"
@@ -62,8 +109,10 @@ providers:
 
   timeweb:
     enabled: false
-    min_interval_seconds: 30
-    max_ops_per_hour: 30
+    min_interval_seconds: 60
+    max_ops_per_hour: 20
+    max_ops_per_day: 100
+    post_release_cooldown_seconds: 10
     api_token: "REPLACE_TIMEWEB_TOKEN"
     probe_server_id: "REPLACE"
     published_cidrs:
@@ -72,8 +121,10 @@ providers:
 
   ufohosting:
     enabled: false
-    min_interval_seconds: 60
-    max_ops_per_hour: 15
+    min_interval_seconds: 120
+    max_ops_per_hour: 10
+    max_ops_per_day: 40
+    post_release_cooldown_seconds: 20
     api_token: "REPLACE"
     api_base: "https://my.ufohosting.ru/api/v1"
     probe_server_id: "REPLACE"
@@ -81,8 +132,10 @@ providers:
 
   cdnvideo:
     enabled: false
-    min_interval_seconds: 60
-    max_ops_per_hour: 15
+    min_interval_seconds: 120
+    max_ops_per_hour: 10
+    max_ops_per_day: 40
+    post_release_cooldown_seconds: 20
     api_token: "REPLACE"
     api_base: "https://api.cdnvideo.ru"
     probe_server_id: "REPLACE"

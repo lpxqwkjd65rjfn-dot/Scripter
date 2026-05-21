@@ -1,30 +1,50 @@
-# Auto
+# Plan: harden rkn_probe to minimize hosting-provider ban risk
 
-## Configuration
-- **Artifacts Path**: {@artifacts_path} → `.zenflow/tasks/{task_id}`
+Goal: minimize (cannot guarantee 0%) probability of provider account
+suspension caused by IP-churn / API abuse, and broaden checker stages
+so a candidate IP is verified hard before it is declared "whitelisted".
 
-## Agent Instructions
+Note on the 0% promise: not technically achievable — hoster heuristics
+are opaque. We minimize risk via conservative rate limits, daily caps,
+exponential backoff on errors, circuit breakers, Retry-After respect,
+polite headers, jitter, and post-error cooldowns.
 
-Ask the user questions when anything is unclear or needs their input. This includes:
-- Ambiguous or incomplete requirements
-- Technical decisions that affect architecture or user experience
-- Trade-offs that require business context
+### [x] Step: Plan
 
-Do not make assumptions on important decisions — get clarification first.
+### [ ] Step: Harden rate limiter
+- Add per-provider rolling daily cap (in addition to hourly)
+- Track recent errors; apply exponential backoff cooldown
+- Honor server-imposed cooldown (Retry-After)
+- Larger jitter; minimum spacing after release
 
-**Debug requests, questions, and investigations:** answer or investigate first. Do not create a plan upfront — the user needs an answer, not a plan. A plan may become relevant later once the investigation reveals what needs to change.
+### [ ] Step: Extend config
+- New global knobs: backoff base/cap, daily cap defaults, post-error cooldown
+- New global checker knobs: extra probe ports, jitter, retries
+- Conservative defaults (slow & polite)
 
-**For all other tasks**, before writing any code, assess the scope of the actual change (not the prompt length — a one-sentence prompt can describe a large feature). Scale your approach:
+### [ ] Step: Persist daily ops budget in state
+- Per-provider daily counter with date key; resets on UTC date change
 
-- **Trivial** (typo, config tweak, single obvious change): implement directly, no plan needed.
-- **Small** (a few files, clear what to do): write 2–3 sentences in `plan.md` describing what and why, then implement. No substeps.
-- **Medium** (multiple components, design decisions, edge cases): write a plan in `plan.md` with requirements, affected files, key decisions, verification. Break into 3–5 steps.
-- **Large** (new feature, cross-cutting, unclear scope): gather requirements and write a technical spec first (`requirements.md`, `spec.md` in `{@artifacts_path}/`). Then write `plan.md` with concrete steps referencing the spec.
+### [ ] Step: Harden orchestrator
+- Per-provider circuit breaker on 429 / 5xx / network errors
+- Enforce daily ops budget before allocating
+- Post-error exponential cooldown with jitter
+- Guaranteed cleanup on cancellation, with timeout per release
+- Refuse to start more than one allocation in flight per provider
 
-**Skip planning and implement directly when** the task is trivial, or the user explicitly asks to "just do it" / gives a clear direct instruction.
+### [ ] Step: Expand checker (more stages)
+- Multi-port TCP sweep (configurable list, all checked)
+- TLS handshake on 443 with cert presence stage
+- HTTP marker on plaintext
+- HTTPS marker (verify=False, port 443) as separate stage
+- Latency sanity stage (RTT within bounds)
+- Stability: 3 sequential TCP probes, require >= 2 successes
+- Jitter between stages; retry once on transient TCP/HTTP errors
 
-To reflect the actual purpose of the first step, you can rename it to something more relevant (e.g., Planning, Investigation). Do NOT remove meta information like comments for any step.
+### [ ] Step: Safer provider HTTP helper
+- Shared `_request` with Retry-After honoring, retry on 429/5xx with backoff
+- Polite User-Agent, conservative timeout
+- Wire into yandex + selectel (rest unchanged for now)
 
-Rule of thumb for step size: each step = a coherent unit of work (component, endpoint, test suite). Not too granular (single function), not too broad (entire feature). Unit tests are part of each step, not separate.
-
-Update `{@artifacts_path}/plan.md` if it makes sense to have a plan and task has more than 1 big step.
+### [ ] Step: Update config.example.yaml
+- Document new knobs with safe defaults
