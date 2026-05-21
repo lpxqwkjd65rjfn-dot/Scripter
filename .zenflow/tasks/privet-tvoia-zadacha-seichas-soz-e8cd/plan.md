@@ -1,30 +1,26 @@
-# Auto
+# RKN Whitelist Probe — Plan
 
-## Configuration
-- **Artifacts Path**: {@artifacts_path} → `.zenflow/tasks/{task_id}`
+См. `spec.md` для полного описания задачи и архитектуры.
 
-## Agent Instructions
+Размер: **Large** — кросс-cutting, 7 провайдеров, TUI, anti-ban логика.
 
-Ask the user questions when anything is unclear or needs their input. This includes:
-- Ambiguous or incomplete requirements
-- Technical decisions that affect architecture or user experience
-- Trade-offs that require business context
+### [x] Step: Спецификация и план
+Зафиксировать требования в `spec.md`, описать многоступенчатую проверку и anti-ban стратегию.
 
-Do not make assumptions on important decisions — get clarification first.
+### [x] Step: Скелет проекта и конфигурация
+`requirements.txt`, `pyproject.toml`, `.gitignore`, `config.example.yaml`, `run.bat`, пакет `rkn_probe/`.
+- модуль `config.py` (pydantic-модели для конфига)
+- модуль `state.py` (журнал в JSON)
+- модуль `rate_limiter.py` (троттлинг + jitter + killswitch)
 
-**Debug requests, questions, and investigations:** answer or investigate first. Do not create a plan upfront — the user needs an answer, not a plan. A plan may become relevant later once the investigation reveals what needs to change.
+### [x] Step: Многоступенчатая проверка IP
+`checker.py` — стадии RangeCheck/ICMP/TCP/TLS-SNI/HTTP-Probe, агрегация результата.
 
-**For all other tasks**, before writing any code, assess the scope of the actual change (not the prompt length — a one-sentence prompt can describe a large feature). Scale your approach:
+### [x] Step: Адаптеры провайдеров
+`providers/base.py` + 7 модулей. Каждый умеет: allocate_ip, associate(ip, vm), disassociate(ip), release(ip), list_ips. Полная реализация для Selectel и Yandex Cloud, скелеты с TODO для остальных 5 (с указанием endpoint'ов из их публичной документации).
 
-- **Trivial** (typo, config tweak, single obvious change): implement directly, no plan needed.
-- **Small** (a few files, clear what to do): write 2–3 sentences in `plan.md` describing what and why, then implement. No substeps.
-- **Medium** (multiple components, design decisions, edge cases): write a plan in `plan.md` with requirements, affected files, key decisions, verification. Break into 3–5 steps.
-- **Large** (new feature, cross-cutting, unclear scope): gather requirements and write a technical spec first (`requirements.md`, `spec.md` in `{@artifacts_path}/`). Then write `plan.md` with concrete steps referencing the spec.
+### [x] Step: Оркестратор и TUI
+`orchestrator.py` — координирует provider × checker с учётом rate-limit. `app.py` — Textual-приложение с панелями: провайдеры/прогресс/лог/найденный IP. Запуск через `python -m rkn_probe`.
 
-**Skip planning and implement directly when** the task is trivial, or the user explicitly asks to "just do it" / gives a clear direct instruction.
-
-To reflect the actual purpose of the first step, you can rename it to something more relevant (e.g., Planning, Investigation). Do NOT remove meta information like comments for any step.
-
-Rule of thumb for step size: each step = a coherent unit of work (component, endpoint, test suite). Not too granular (single function), not too broad (entire feature). Unit tests are part of each step, not separate.
-
-Update `{@artifacts_path}/plan.md` if it makes sense to have a plan and task has more than 1 big step.
+### [x] Step: Smoke-test и проверка импорта
+`python -m rkn_probe --check` (валидация конфига без сети) + dry-run в mock-режиме.
